@@ -45,3 +45,17 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 * Support argument "prefer weather like lat-lon" and "prefer all settings like lat-lon"
 * Even make temperature optional, or add a weight to temperature to allow ignoring it
 * Use population density to allow "in a city but near the country" or "in the country but near a city"
+
+## Citing IdealPlace
+
+I don't get paid for writing or maintaining this, so if you find this tool useful or mention it in your writing, please please cite it
+ by using the following BibTeX entry.
+
+```
+@Misc{IdealPlace2024,
+  author =       {Mark J.~Stock},
+  title =        {IdealPlace:  Find the ideal location on the Earth for you},
+  howpublished = {\url{https://github.com/markstock/idealplace}},
+  year =         {2024}
+}
+```
