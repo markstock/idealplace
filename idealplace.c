@@ -805,11 +805,11 @@ int main (int argc, char **argv) {
 
   // array to hold values for my hometown
   float boston[6];
-  boston[0] = -1.5f;	// Jan mean temp (C)
-  boston[1] = 24.f;		// July mean temp (C)
-  boston[2] = 80.f;		// Annual average rain (mm/mo)
-  boston[3] = 0.5f;		// Annual average cloud cover (0..1)
-  boston[4] = 1.0f;		// Human Development Index (0..1), negative means don't use
+  boston[0] = 1.1f;		// Jan mean temp (C)
+  boston[1] = 24.5f;	// July mean temp (C)
+  boston[2] = 101.f;	// Annual average rain (mm/mo)
+  boston[3] = 0.543f;	// Annual average cloud cover (0..1)
+  boston[4] = 0.985f;	// Human Development Index (0..1), negative means don't use
   boston[5] = -1.0f;	// Proximity to mountains (0..1), negative means don't use
 
   // define default parameters
