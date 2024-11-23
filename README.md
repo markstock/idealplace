@@ -2,6 +2,8 @@
 
 Find the ideal location on the Earth for you
 
+![Sample output](sample_lowres.png?raw=true "Sample output")
+
 ## Build and run
 
 Should be as easy as
@@ -10,9 +12,13 @@ Should be as easy as
 
 	./idealplace
 
+The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Earth, with lighter colors representing areas which match the given preferences.
+
 ## Options
 
-None yet.
+	-boston		Set the preferences to Boston, USA
+	-tf januarylow januaryhigh julylow julyhigh		(all in F)
+	-tc januarylow januaryhigh julylow julyhigh		(all in C)
 
 ## Sources
 
