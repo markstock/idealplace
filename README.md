@@ -23,6 +23,7 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 	-ac value			Average cloud cover (0 to 1)
 	-hdi value			Human development index (0 to 1)
 	-mtn value			Proximity to terrain (0 to 1)
+	-new				Start setting preferences for a second person
 	-o name.png			Output file name
 
 ## Sources
