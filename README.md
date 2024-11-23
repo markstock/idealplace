@@ -19,7 +19,7 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 	-boston				Set the preferences to Boston, USA
 	-tf januarylow januaryhigh julylow julyhigh		(all in F)
 	-tc januarylow januaryhigh julylow julyhigh		(all in C)
-	-mr mmpermonth		Average precipitation in mm/month
+	-mr value			Average precipitation in mm/month
 	-ac value			Average cloud cover (0 to 1)
 	-hdi value			Human development index (0 to 1)
 	-mtn value			Proximity to terrain (0 to 1)
