@@ -29,7 +29,7 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 ## Sources
 
 * Air temperature and precipitation from the ssp245 (most-likely scenario) projection from [GloH2O](https://www.gloh2o.org/koppen/) dataset.
-* Clouds are a 2023 average, data from [MERRA-2](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary).
+* Clouds are a 2021-4 average, data from [MERRA-2](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary).
 * Elevation from [GDEMM2024](https://dataservices.gfz-potsdam.de/panmetaworks/showshort.php?id=b2d17f8d-f599-11ee-967a-4ffbfe06208e), further processed to determine per-pixel elevation variance.
 * Human Development Index from [Mosaiks](https://www.mosaiks.org/hdi); I expanded it from -56:74 to -90:90 and filled in the holes.
 * Population density from [Copernicus](https://human-settlement.emergency.copernicus.eu/download.php?ds=pop).
@@ -37,7 +37,6 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 
 ## To Do
 
-* Find a higher-resolution cloud data set or average the cloud data over more years
 * Use the open-water data set to make an image of distance-to-water (to allow "more coastal" option)
 * And use that to mask off all open water areas (like the Caspian Sea)
 * Generate a layer with national and US state boundaries to aid in locating these places
@@ -46,6 +45,7 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 * Support argument "prefer weather like lat-lon" and "prefer all settings like lat-lon"
 * Even make temperature optional, or add a weight to temperature to allow ignoring it
 * Use population density to allow "in a city but near the country" or "in the country but near a city"
+* Find a higher-resolution cloud data set, if possible
 
 ## Citing IdealPlace
 

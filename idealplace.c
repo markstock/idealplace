@@ -808,7 +808,7 @@ int main (int argc, char **argv) {
   boston[0] = 1.1f;		// Jan mean temp (C)
   boston[1] = 24.5f;	// July mean temp (C)
   boston[2] = 101.f;	// Annual average rain (mm/mo)
-  boston[3] = 0.543f;	// Annual average cloud cover (0..1)
+  boston[3] = 0.516f;	// Annual average cloud cover (0..1)
   boston[4] = 0.985f;	// Human Development Index (0..1), negative means don't use
   boston[5] = -1.0f;	// Proximity to mountains (0..1), negative means don't use
 
