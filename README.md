@@ -41,3 +41,7 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 * And use that to mask off all open water areas (like the Caspian Sea)
 * Generate a layer with national and US state boundaries to aid in locating these places
 * Support optional "no elevation less than x" or a desired elevation (use log scale?)
+* Optional argument "prefer far away from lat-lon" or "prefer close to lat-lon"
+* Support argument "prefer weather like lat-lon" and "prefer all settings like lat-lon"
+* Even make temperature optional, or add a weight to temperature to allow ignoring it
+* Use population density to allow "in a city but near the country" or "in the country but near a city"
