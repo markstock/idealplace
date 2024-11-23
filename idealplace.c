@@ -782,34 +782,84 @@ int Usage(char progname[255],int status) {
 }
 
 
+float ftoc (const float tempf) {
+  return (tempf-32.f)/1.8f;
+}
 
 
 int main (int argc, char **argv) {
 
-  int xres, yres;
-  int nn, nt;
-  char inpng[255];
-  char outpng[255];
-  char progname[255];
-  int i;
+  // array to hold up to 8 sets of preferences
+  float ideal[8][6];
+  int p = 1;	// start with 1 set of preferences
+  // pre-set all
+  for (int i=0; i<8; ++i) {
+    ideal[i][0] = 10.f;
+    ideal[i][1] = 20.f;
+    // these -1 mean "don't use"
+    ideal[i][2] = -1.f;
+    ideal[i][3] = -1.f;
+    ideal[i][4] = -1.f;
+    ideal[i][5] = -1.f;
+  }
+
+  // array to hold values for my hometown
+  float boston[6];
+  boston[0] = -1.5f;	// Jan mean temp (C)
+  boston[1] = 24.f;		// July mean temp (C)
+  boston[2] = 80.f;		// Annual average rain (mm/mo)
+  boston[3] = 0.5f;		// Annual average cloud cover (0..1)
+  boston[4] = 1.0f;		// Human Development Index (0..1), negative means don't use
+  boston[5] = -1.0f;	// Proximity to mountains (0..1), negative means don't use
 
   // define default parameters
-  xres = -1000;
-  yres = -1000;
-  nn = 1;
-  nt = 1;
+  char outpng[255];
   sprintf(outpng,"out.png");
 
   // process command-line parameters
+  char progname[255];
   (void) strcpy(progname,argv[0]);
   if (argc < 1) (void) Usage(progname,0);
-  for (i=1; i<argc; i++) {
-    if (strncmp(argv[i], "-nn", 3) == 0) {
-      nn = atoi(argv[++i]);
-    } else if (strncmp(argv[i], "-nt", 3) == 0) {
-      nt = atoi(argv[++i]);
-    } else if (strncmp(argv[i], "-i", 2) == 0) {
-      strcpy(inpng,argv[++i]);
+  for (int i=1; i<argc; i++) {
+    if (strncmp(argv[i], "-boston", 3) == 0) {
+      // replace ideals for current person to Boston
+      for (int i=0; i<6; ++i) ideal[p-1][i] = boston[i];
+    } else if (strncmp(argv[i], "-new", 3) == 0) {
+      if (p==8) {
+        printf("No more than 8 sets of preferences allowed.\n");
+      } else {
+        // begin setting preferences for a new person
+        ++p;
+        printf("Setting ideals for person %d now\n", p);
+      }
+    } else if (strncmp(argv[i], "-tc", 3) == 0) {
+      const float janlow = atof(argv[++i]);
+      const float janhigh = atof(argv[++i]);
+      const float julylow = atof(argv[++i]);
+      const float julyhigh = atof(argv[++i]);
+      ideal[p-1][0] = 0.5*(janlow+janhigh);
+      ideal[p-1][1] = 0.5*(julylow+julyhigh);
+      printf("  set ideal Jan, July temps to %g %g C\n", ideal[p-1][0], ideal[p-1][1]);
+    } else if (strncmp(argv[i], "-tf", 3) == 0) {
+      const float janlow = atof(argv[++i]);
+      const float janhigh = atof(argv[++i]);
+      const float julylow = atof(argv[++i]);
+      const float julyhigh = atof(argv[++i]);
+      ideal[p-1][0] = ftoc(0.5*(janlow+janhigh));
+      ideal[p-1][1] = ftoc(0.5*(julylow+julyhigh));
+      printf("  set ideal Jan, July temps to %g %g C\n", ideal[p-1][0], ideal[p-1][1]);
+    } else if (strncmp(argv[i], "-mr", 3) == 0) {
+      ideal[p-1][2] = atof(argv[++i]);
+      printf("  set ideal monthly rain to %g mm/mo\n", ideal[p-1][2]);
+    } else if (strncmp(argv[i], "-ac", 2) == 0) {
+      ideal[p-1][3] = atof(argv[++i]);
+      printf("  set ideal annual cloud cover to %g (1=100%)\n", ideal[p-1][3]);
+    } else if (strncmp(argv[i], "-hdi", 2) == 0) {
+      ideal[p-1][4] = atof(argv[++i]);
+      printf("  set ideal Human Development Index to %g (1=most)\n", ideal[p-1][4]);
+    } else if (strncmp(argv[i], "-mtn", 3) == 0) {
+      ideal[p-1][5] = atof(argv[++i]);
+      printf("  set ideal mountain proximity to %g (1=closest)\n", ideal[p-1][5]);
     } else if (strncmp(argv[i], "-o", 2) == 0) {
       strcpy(outpng,argv[++i]);
     } else {
@@ -817,12 +867,11 @@ int main (int argc, char **argv) {
     }
   }
 
-  // check the command-line parameters
-  if (nn < 0) { nn = 0; }
-  if (nt < 0) { nt = 0; }
-
   // interrogate the header for resolution
+  char inpng[255];
   sprintf(inpng,"airtemp_m1.png");
+  int xres = -1000;
+  int yres = -1000;
   (void)read_png_res(inpng, &yres, &xres);
 
   // allocate and read temperature, full range is -30 to 40 C
@@ -876,78 +925,71 @@ int main (int argc, char **argv) {
   float total_hdi = 0.f;
   float total_mtn = 0.f;
 
-  // Lauren's ideal
-  float ideal_tempw = 25.0;	// C
-  float ideal_temps = 25.0;	// C
-  float ideal_rain = 30.0;	// mm / month
-  float ideal_cloud = 0.0;	// none, ever
-  float ideal_hdi = 0.7;	// normalized
-  float ideal_mtn = 0.1;	// normalized
-  //printf("Lau's ideal temp %g and rain %g\n", ideal_temp, ideal_rain);
-
   // accumulate penalties
+
+  for (int ip=0; ip<p; ++ip) {
+
+  // always consider temperature
+  float ideal_tempw = ideal[ip][0];
+  float ideal_temps = ideal[ip][1];
   for (int row=0; row<yres; ++row) {
     for (int col=0; col<xres; ++col) {
       if (tempw[col][row] > -29.9f) {
-
         float tempcost = temp_penalty * fabs(temps[col][row]-ideal_temps);
         outval[col][row] += tempcost;
         total_temp += tempcost;
         tempcost = temp_penalty * fabs(tempw[col][row]-ideal_tempw);
         outval[col][row] += tempcost;
         total_temp += tempcost;
-
-        const float raincost = rain_penalty * fabs(logf((1.0+rain[col][row])/ideal_rain));
-        outval[col][row] += raincost;
-        total_rain += raincost;
-
-        const float cloudcost = cloud_penalty * fabs(clouds[col][row]-ideal_cloud);
-        outval[col][row] += cloudcost;
-        total_cloud += cloudcost;
-
-        const float hdicost = hdi_penalty * fabs(hdi[col][row]-ideal_hdi);
-        outval[col][row] += hdicost;
-        total_hdi += hdicost;
       }
     }
   }
 
-  // Mark's ideal
-
-  if (0==0) {
-    // what is ideal temperature and rainfall for this month?
-    ideal_temps = 7.f;	// deg C
-    ideal_tempw = 25.f;	// deg C
-    ideal_rain = 50.0;	// mm / month
-    ideal_cloud = 0.2;	// sometimes
-    ideal_hdi = 0.9;	// very civilized
-    ideal_mtn = 0.5;	// some mountains
-    //printf("Mark's ideal temp %g and rain %g for month %d\n", ideal_temp, ideal_rain, month);
-
-    // accumulate penalties
+  // all others are optional
+  float ideal_rain = ideal[ip][2];
+  if (ideal_rain >= 0.f) {
     for (int row=0; row<yres; ++row) {
       for (int col=0; col<xres; ++col) {
         if (tempw[col][row] > -29.9f) {
-
-          float tempcost = temp_penalty * fabs(temps[col][row]-ideal_temps);
-          outval[col][row] += tempcost;
-          total_temp += tempcost;
-          tempcost = temp_penalty * fabs(tempw[col][row]-ideal_tempw);
-          outval[col][row] += tempcost;
-          total_temp += tempcost;
-
-          const float raincost = rain_penalty * fabs(logf((1.0+rain[col][row])/ideal_rain));
+          const float raincost = rain_penalty * fabs(logf((0.1f+rain[col][row])/(0.1f+ideal_rain)));
           outval[col][row] += raincost;
           total_rain += raincost;
+        }
+      }
+    }
+  }
 
+  float ideal_cloud = ideal[ip][3];
+  if (ideal_cloud >= 0.f) {
+    for (int row=0; row<yres; ++row) {
+      for (int col=0; col<xres; ++col) {
+        if (tempw[col][row] > -29.9f) {
           const float cloudcost = cloud_penalty * fabs(clouds[col][row]-ideal_cloud);
           outval[col][row] += cloudcost;
           total_cloud += cloudcost;
+        }
+      }
+    }
+  }
 
+  float ideal_hdi = ideal[ip][4];
+  if (ideal_hdi >= 0.f) {
+    for (int row=0; row<yres; ++row) {
+      for (int col=0; col<xres; ++col) {
+        if (tempw[col][row] > -29.9f) {
           const float hdicost = hdi_penalty * fabs(hdi[col][row]-ideal_hdi);
           outval[col][row] += hdicost;
           total_hdi += hdicost;
+        }
+      }
+    }
+  }
 
+  float ideal_mtn = ideal[ip][5];
+  if (ideal_mtn >= 0.f) {
+    for (int row=0; row<yres; ++row) {
+      for (int col=0; col<xres; ++col) {
+        if (tempw[col][row] > -29.9f) {
           const float mtncost = mtn_penalty * fabs(mtn[col][row]-ideal_mtn);
           outval[col][row] += mtncost;
           total_mtn += mtncost;
@@ -955,7 +997,9 @@ int main (int argc, char **argv) {
       }
     }
   }
-  printf("total costs, temp %g, rain %g, cloud %g, hdi %g, mtn %g\n", total_temp, total_rain, total_cloud, total_hdi, total_mtn);
+  }
+
+  printf("total costs: temp %g, rain %g, cloud %g, hdi %g, mtn %g\n", total_temp, total_rain, total_cloud, total_hdi, total_mtn);
 
   // find the min and max values
   float loval = 9.9e+9;
@@ -970,7 +1014,7 @@ int main (int argc, char **argv) {
       }
     }
   }
-  printf("%g percent tallied\n", 100.f*npix/(xres*yres));
+  //printf("%g percent tallied\n", 100.f*npix/(xres*yres));
   printf("min and max range: %g %g\n", loval, hival);
 
   // flip, to positive is better
@@ -978,15 +1022,44 @@ int main (int argc, char **argv) {
   for (int row=0; row<yres; ++row) {
     for (int col=0; col<xres; ++col) {
       if (tempw[col][row] < -29.9f) {
+        // zero out the ocean
         outval[col][row] = 0.0f;
       } else {
+        // flip to 0=bad, 1=best
         outval[col][row] = 1.0f - (outval[col][row]-loval)/(hival-loval);
+        // apply power to accentuate the best
+        outval[col][row] = powf(outval[col][row], 8.f);
       }
     }
   }
 
   // write the image
   (void)write_png(outpng,xres,yres,FALSE,TRUE, outval,0.f,1.f, NULL,0.0,1.0, NULL,0.0,1.0);
+
+  // find the "best" place
+  float bestval = 0.f;
+  int bestrow = -1;
+  int bestcol = -1;
+  for (int row=0; row<yres; ++row) {
+    for (int col=0; col<xres; ++col) {
+      if (tempw[col][row] > -29.9f) {
+        if (outval[col][row] > bestval) {
+          bestval = outval[col][row];
+          bestrow = row;
+          bestcol = col;
+        }
+      }
+    }
+  }
+  //printf("Best pixel is %d %d\n", bestcol, bestrow);
+  printf("Best place on Earth is");
+  const float nlat = 0.1f*(0.5f+bestrow-900.f);
+  const float elong = 0.1f*(0.5f+bestcol-1800.f);
+  if (nlat>0.f) printf(" %g N", nlat);
+  else printf(" %g S", -nlat);
+  if (elong>0.f) printf(" %g E", elong);
+  else printf(" %g W", -elong);
+  printf("\n");
 
   exit(0);
 }

@@ -25,9 +25,7 @@ None yet.
 
 ## To Do
 
-* Add command-line options
 * Use the open-water data set to make an image of distance-to-water
 * And use that to mask off all open water areas (like the Caspian Sea)
 * Generate a layer with national and US state boundaries to aid in locating these places
-* Output lat-lon of the largest value(s), ready to paste into a mapping program
 
