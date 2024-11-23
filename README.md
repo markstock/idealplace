@@ -48,13 +48,12 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 
 ## Citing IdealPlace
 
-I don't get paid for writing or maintaining this, so if you find this tool useful or mention it in your writing, please please cite it
- by using the following BibTeX entry.
+I don't get paid for writing or maintaining this, so if you find this tool useful or mention it in your writing, please cite it by using the following BibTeX entry.
 
 ```
 @Misc{IdealPlace2024,
   author =       {Mark J.~Stock},
-  title =        {IdealPlace:  Find the ideal location on the Earth for you},
+  title =        {Ideal{P}lace:  Find the ideal location on the {E}arth for you},
   howpublished = {\url{https://github.com/markstock/idealplace}},
   year =         {2024}
 }
