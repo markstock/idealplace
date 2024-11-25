@@ -790,7 +790,7 @@ float ftoc (const float tempf) {
 int main (int argc, char **argv) {
 
   // array to hold up to 8 sets of preferences
-  float ideal[8][6];
+  float ideal[8][7];
   int p = 1;	// start with 1 set of preferences
   // pre-set all
   for (int i=0; i<8; ++i) {
@@ -801,16 +801,18 @@ int main (int argc, char **argv) {
     ideal[i][3] = -1.f;
     ideal[i][4] = -1.f;
     ideal[i][5] = -1.f;
+    ideal[i][6] = -1.f;
   }
 
   // array to hold values for my hometown
-  float boston[6];
-  boston[0] = 1.1f;		// Jan mean temp (C)
-  boston[1] = 24.5f;	// July mean temp (C)
-  boston[2] = 101.f;	// Annual average rain (mm/mo)
+  float boston[7];
+  boston[0] = 1.1f;		// Jan mean temp (-30..40 C)
+  boston[1] = 24.5f;	// July mean temp (-30..40 C)
+  boston[2] = 101.f;	// Annual average rain (0..1000 mm/mo)
   boston[3] = 0.516f;	// Annual average cloud cover (0..1)
-  boston[4] = 0.985f;	// Human Development Index (0..1), negative means don't use
-  boston[5] = -1.0f;	// Proximity to mountains (0..1), negative means don't use
+  boston[4] = 3.75f;	// Average wind speed at 10m (0..25 m/s)
+  boston[5] = 0.985f;	// Human Development Index (0..1), negative means don't use
+  boston[6] = -1.0f;	// Proximity to mountains (0..1), negative means don't use
 
   // define default parameters
   char outpng[255];
@@ -854,12 +856,18 @@ int main (int argc, char **argv) {
     } else if (strncmp(argv[i], "-ac", 2) == 0) {
       ideal[p-1][3] = atof(argv[++i]);
       printf("  set ideal annual cloud cover to %g (1=100%)\n", ideal[p-1][3]);
-    } else if (strncmp(argv[i], "-hdi", 2) == 0) {
+    } else if (strncmp(argv[i], "-wmps", 5) == 0) {
       ideal[p-1][4] = atof(argv[++i]);
-      printf("  set ideal Human Development Index to %g (1=most)\n", ideal[p-1][4]);
-    } else if (strncmp(argv[i], "-mtn", 3) == 0) {
+      printf("  set ideal wind speed to %g (m/s)\n", ideal[p-1][4]);
+    } else if (strncmp(argv[i], "-wmph", 5) == 0) {
+      ideal[p-1][4] = 0.44704f*atof(argv[++i]);
+      printf("  set ideal wind speed to %g (m/s)\n", ideal[p-1][4]);
+    } else if (strncmp(argv[i], "-hdi", 2) == 0) {
       ideal[p-1][5] = atof(argv[++i]);
-      printf("  set ideal mountain proximity to %g (1=closest)\n", ideal[p-1][5]);
+      printf("  set ideal Human Development Index to %g (1=most)\n", ideal[p-1][5]);
+    } else if (strncmp(argv[i], "-mtn", 3) == 0) {
+      ideal[p-1][6] = atof(argv[++i]);
+      printf("  set ideal mountain proximity to %g (1=closest)\n", ideal[p-1][6]);
     } else if (strncmp(argv[i], "-o", 2) == 0) {
       strcpy(outpng,argv[++i]);
     } else {
@@ -892,12 +900,17 @@ int main (int argc, char **argv) {
   float** clouds = allocate_2d_array_f(xres,yres);
   (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,clouds,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
 
-  // human development index
+  // wind (0 to 25 m/s average at 10m above ground)
+  sprintf(inpng,"windspeed.png");
+  float** wind = allocate_2d_array_f(xres,yres);
+  (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,wind,0.0,25.0,NULL,0.0,1.0,NULL,0.0,1.0);
+
+  // human development index (0..1)
   sprintf(inpng,"hdi.png");
   float** hdi = allocate_2d_array_f(xres,yres);
   (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,hdi,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
 
-  // proximity to mountains
+  // proximity to mountains (0..1)
   sprintf(inpng,"dem_variance_area.png");
   float** mtn = allocate_2d_array_f(xres,yres);
   (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,mtn,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
@@ -915,6 +928,7 @@ int main (int argc, char **argv) {
   const float temp_penalty = 0.1f;
   const float rain_penalty = 1.5f;
   const float cloud_penalty = 5.0f;
+  const float wind_penalty = 1.0f;
   const float hdi_penalty = 5.0f;
   const float mtn_penalty = 5.0f;
 
@@ -922,6 +936,7 @@ int main (int argc, char **argv) {
   float total_temp = 0.f;
   float total_rain = 0.f;
   float total_cloud = 0.f;
+  float total_wind = 0.f;
   float total_hdi = 0.f;
   float total_mtn = 0.f;
 
@@ -972,7 +987,20 @@ int main (int argc, char **argv) {
     }
   }
 
-  float ideal_hdi = ideal[ip][4];
+  float ideal_wind = ideal[ip][4];
+  if (ideal_wind >= 0.f) {
+    for (int row=0; row<yres; ++row) {
+      for (int col=0; col<xres; ++col) {
+        if (tempw[col][row] > -29.9f) {
+          const float windcost = wind_penalty * fabs(wind[col][row]-ideal_wind);
+          outval[col][row] += windcost;
+          total_wind += windcost;
+        }
+      }
+    }
+  }
+
+  float ideal_hdi = ideal[ip][5];
   if (ideal_hdi >= 0.f) {
     for (int row=0; row<yres; ++row) {
       for (int col=0; col<xres; ++col) {
@@ -985,7 +1013,7 @@ int main (int argc, char **argv) {
     }
   }
 
-  float ideal_mtn = ideal[ip][5];
+  float ideal_mtn = ideal[ip][6];
   if (ideal_mtn >= 0.f) {
     for (int row=0; row<yres; ++row) {
       for (int col=0; col<xres; ++col) {
@@ -999,7 +1027,7 @@ int main (int argc, char **argv) {
   }
   }
 
-  printf("total costs: temp %g, rain %g, cloud %g, hdi %g, mtn %g\n", total_temp, total_rain, total_cloud, total_hdi, total_mtn);
+  printf("total costs: temp %g, rain %g, cloud %g, wind %g, hdi %g, mtn %g\n", total_temp, total_rain, total_cloud, total_wind, total_hdi, total_mtn);
 
   // find the min and max values
   float loval = 9.9e+9;

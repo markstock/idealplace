@@ -21,6 +21,8 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 	-tc januarylow januaryhigh julylow julyhigh		(all in C)
 	-mr value			Average precipitation in mm/month
 	-ac value			Average cloud cover (0 to 1)
+	-wmph value			Average wind speed (mph)
+	-wmps value			Average wind speed (m/s)
 	-hdi value			Human development index (0 to 1)
 	-mtn value			Proximity to terrain (0 to 1)
 	-new				Start setting preferences for a second person
@@ -32,6 +34,7 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 * Clouds are a 2021-4 average, data from [MERRA-2](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary).
 * Elevation from [GDEMM2024](https://dataservices.gfz-potsdam.de/panmetaworks/showshort.php?id=b2d17f8d-f599-11ee-967a-4ffbfe06208e), further processed to determine per-pixel elevation variance.
 * Human Development Index from [Mosaiks](https://www.mosaiks.org/hdi); I expanded it from -56:74 to -90:90 and filled in the holes.
+* Wind speed from [GWA3](https://globalwindatlas.info/download/gis-files)
 * Population density from [Copernicus](https://human-settlement.emergency.copernicus.eu/download.php?ds=pop).
 * While I don't use it in the code, I enjoy browsing [WeatherSpark](https://weatherspark.com/).
 
