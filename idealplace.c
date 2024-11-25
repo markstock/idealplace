@@ -1061,9 +1061,6 @@ int main (int argc, char **argv) {
     }
   }
 
-  // write the image
-  (void)write_png(outpng,xres,yres,FALSE,TRUE, outval,0.f,1.f, NULL,0.0,1.0, NULL,0.0,1.0);
-
   // find the "best" place
   float bestval = 0.f;
   int bestrow = -1;
@@ -1088,6 +1085,21 @@ int main (int argc, char **argv) {
   if (elong>0.f) printf(" %g E", elong);
   else printf(" %g W", -elong);
   printf("\n");
+
+  // optionally add national boundary lines (overwrite the mountain map)
+  if (1==1) {
+    //sprintf(inpng,"clouds.png");
+    (void)read_png("natl_bdry.png",xres,yres,FALSE,FALSE,1.0,FALSE,mtn,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
+    // and include only where it makes the pixel brighter
+    for (int row=0; row<yres; ++row) {
+      for (int col=0; col<xres; ++col) {
+        if (mtn[col][row] > outval[col][row]) outval[col][row] = mtn[col][row];
+      }
+    }
+  }
+
+  // write the image
+  (void)write_png(outpng,xres,yres,FALSE,TRUE, outval,0.f,1.f, NULL,0.0,1.0, NULL,0.0,1.0);
 
   exit(0);
 }
