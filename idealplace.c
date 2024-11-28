@@ -786,11 +786,46 @@ float ftoc (const float tempf) {
   return (tempf-32.f)/1.8f;
 }
 
+// return great circle route distance in radians (0..pi) given lat-lon
+float gcr_dist (const float lat1, const float lon1, const float lat2, const float lon2) {
+
+  // first convert to xyz vectors
+  float v1[3];
+  float v2[3];
+
+  v1[0] = cosf(lon1)*cosf(lat1);
+  v1[1] = sinf(lon1)*cosf(lat1);
+  v1[2] = sinf(lat1);
+  v2[0] = cosf(lon2)*cosf(lat2);
+  v2[1] = sinf(lon2)*cosf(lat2);
+  v2[2] = sinf(lat2);
+
+  const float dp = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
+  const float theta = asinf(1.f) - asinf(dp);
+
+  return theta;
+}
+
+// return great circle route distance in radians (0..pi) given pixel coords
+float gcr_dist_px (const int x1, const int y1, const int x2, const int y2, const int px, const int py) {
+
+  const float lat1 = 90.f - 180.f * (0.5f+y1) / (float)py;
+  const float lon1 = -180.f + 360.f * (0.5f+x1) / (float)px;
+  const float lat2 = 90.f - 180.f * (0.5f+y2) / (float)py;
+  const float lon2 = -180.f + 360.f * (0.5f+x2) / (float)px;
+  //printf("\npixel %d,%d is %gN %gE\n", x1, y1, lat1, lon1);
+  //printf("pixel %d,%d is %gN %gE\n", x2, y2, lat2, lon2);
+  //printf("distance is %g\n", gcr_dist (lat1, lon1, lat2, lon2));
+  const float degtorad = asinf(1.f) / 90.f;
+
+  return gcr_dist (degtorad*lat1, degtorad*lon1, degtorad*lat2, degtorad*lon2);
+}
+
 
 int main (int argc, char **argv) {
 
   // array to hold up to 8 sets of preferences
-  float ideal[8][7];
+  float ideal[8][11];
   int p = 1;	// start with 1 set of preferences
   // pre-set all
   for (int i=0; i<8; ++i) {
@@ -802,6 +837,11 @@ int main (int argc, char **argv) {
     ideal[i][4] = -1.f;
     ideal[i][5] = -1.f;
     ideal[i][6] = -1.f;
+    // for lat-lon, need lower
+    ideal[i][7] = -999.f;
+    ideal[i][8] = -999.f;
+    ideal[i][9] = -999.f;
+    ideal[i][10] = -999.f;
   }
 
   // array to hold values for my hometown
@@ -813,6 +853,10 @@ int main (int argc, char **argv) {
   boston[4] = 3.75f;	// Average wind speed at 10m (0..25 m/s)
   boston[5] = 0.985f;	// Human Development Index (0..1), negative means don't use
   boston[6] = -1.0f;	// Proximity to mountains (0..1), negative means don't use
+  boston[7] = 42.35f;	// latitude (N degrees) - close to
+  boston[8] = -71.05f;	// longitude (E degrees) - close to
+  boston[9] = -999.f;	// latitude (N degrees) - far from
+  boston[10] = -999.f;	// longitude (E degrees) - far from
 
   // define default parameters
   char outpng[255];
@@ -868,6 +912,14 @@ int main (int argc, char **argv) {
     } else if (strncmp(argv[i], "-mtn", 3) == 0) {
       ideal[p-1][6] = atof(argv[++i]);
       printf("  set ideal mountain proximity to %g (1=closest)\n", ideal[p-1][6]);
+    } else if (strncmp(argv[i], "-ct", 3) == 0) {
+      ideal[p-1][7] = atof(argv[++i]);
+      ideal[p-1][8] = atof(argv[++i]);
+      printf("  prefer close to %g N %g E\n", ideal[p-1][7], ideal[p-1][8]);
+    } else if (strncmp(argv[i], "-ff", 3) == 0) {
+      ideal[p-1][9] = atof(argv[++i]);
+      ideal[p-1][10] = atof(argv[++i]);
+      printf("  prefer far from %g N %g E\n", ideal[p-1][9], ideal[p-1][10]);
     } else if (strncmp(argv[i], "-o", 2) == 0) {
       strcpy(outpng,argv[++i]);
     } else {
@@ -876,44 +928,35 @@ int main (int argc, char **argv) {
   }
 
   // interrogate the header for resolution
-  char inpng[255];
-  sprintf(inpng,"airtemp_m1.png");
   int xres = -1000;
   int yres = -1000;
-  (void)read_png_res(inpng, &yres, &xres);
+  (void)read_png_res("airtemp_m1.png", &yres, &xres);
 
   // allocate and read temperature, full range is -30 to 40 C
   float** tempw = allocate_2d_array_f(xres,yres);
-  sprintf(inpng,"airtemp_m1.png");
-  (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,tempw,-30.0,70.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  (void)read_png("airtemp_m1.png",xres,yres,FALSE,FALSE,1.0,FALSE,tempw,-30.0,70.0,NULL,0.0,1.0,NULL,0.0,1.0);
   float** temps = allocate_2d_array_f(xres,yres);
-  sprintf(inpng,"airtemp_m7.png");
-  (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,temps,-30.0,70.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  (void)read_png("airtemp_m7.png",xres,yres,FALSE,FALSE,1.0,FALSE,temps,-30.0,70.0,NULL,0.0,1.0,NULL,0.0,1.0);
 
   // allocate and read precipitation, full range is 0 to 1000mm per month
   float** rain = allocate_2d_array_f(xres,yres);
-  sprintf(inpng,"precip_avg.png");
-  (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,rain,0.0,1000.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  (void)read_png("precip_avg.png",xres,yres,FALSE,FALSE,1.0,FALSE,rain,0.0,1000.0,NULL,0.0,1.0,NULL,0.0,1.0);
 
   // and clouds (0=sunny, 1=cloudy)
-  sprintf(inpng,"clouds.png");
   float** clouds = allocate_2d_array_f(xres,yres);
-  (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,clouds,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  (void)read_png("clouds.png",xres,yres,FALSE,FALSE,1.0,FALSE,clouds,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
 
   // wind (0 to 25 m/s average at 10m above ground)
-  sprintf(inpng,"windspeed.png");
   float** wind = allocate_2d_array_f(xres,yres);
-  (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,wind,0.0,25.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  (void)read_png("windspeed.png",xres,yres,FALSE,FALSE,1.0,FALSE,wind,0.0,25.0,NULL,0.0,1.0,NULL,0.0,1.0);
 
   // human development index (0..1)
-  sprintf(inpng,"hdi.png");
   float** hdi = allocate_2d_array_f(xres,yres);
-  (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,hdi,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  (void)read_png("hdi.png",xres,yres,FALSE,FALSE,1.0,FALSE,hdi,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
 
   // proximity to mountains (0..1)
-  sprintf(inpng,"dem_variance_area.png");
   float** mtn = allocate_2d_array_f(xres,yres);
-  (void)read_png(inpng,xres,yres,FALSE,FALSE,1.0,FALSE,mtn,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  (void)read_png("dem_variance_area.png",xres,yres,FALSE,FALSE,1.0,FALSE,mtn,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
 
 
   // allocate space for the output and set to 0
@@ -931,6 +974,7 @@ int main (int argc, char **argv) {
   const float wind_penalty = 1.0f;
   const float hdi_penalty = 5.0f;
   const float mtn_penalty = 5.0f;
+  const float dist_penalty = 2.5f;
 
   // running sums
   float total_temp = 0.f;
@@ -939,6 +983,7 @@ int main (int argc, char **argv) {
   float total_wind = 0.f;
   float total_hdi = 0.f;
   float total_mtn = 0.f;
+  float total_dist = 0.f;
 
   // accumulate penalties
 
@@ -1025,6 +1070,38 @@ int main (int argc, char **argv) {
       }
     }
   }
+
+  // want close to, so penalize far from
+  int ideal_px = 0.5f + xres * (180.f + ideal[p-1][8]) / 360.f;
+  int ideal_py = 0.5f + yres * ( 90.f + ideal[p-1][7]) / 180.f;
+  if (ideal[p-1][7] > -500.f) {
+    for (int row=0; row<yres; ++row) {
+      for (int col=0; col<xres; ++col) {
+        if (tempw[col][row] > -29.9f) {
+          const float distcost = dist_penalty * gcr_dist_px(ideal_px, ideal_py, col, row, xres, yres);
+          outval[col][row] += distcost;
+          total_dist += distcost;
+        }
+      }
+    }
+  }
+
+  // want far from given point, so penalize close to
+  ideal_px = 0.5f + xres * (180.f + ideal[p-1][10]) / 360.f;
+  ideal_py = 0.5f + yres * ( 90.f + ideal[p-1][9]) / 180.f;
+  if (ideal[p-1][9] > -500.f) {
+    for (int row=0; row<yres; ++row) {
+      for (int col=0; col<xres; ++col) {
+        if (tempw[col][row] > -29.9f) {
+          const float distcost = dist_penalty * (3.1416f-gcr_dist_px(ideal_px, ideal_py, col, row, xres, yres));
+          outval[col][row] += distcost;
+          total_dist += distcost;
+        }
+      }
+    }
+  }
+
+
   }
 
   printf("total costs: temp %g, rain %g, cloud %g, wind %g, hdi %g, mtn %g\n", total_temp, total_rain, total_cloud, total_wind, total_hdi, total_mtn);
@@ -1088,7 +1165,6 @@ int main (int argc, char **argv) {
 
   // optionally add national boundary lines (overwrite the mountain map)
   if (1==1) {
-    //sprintf(inpng,"clouds.png");
     (void)read_png("natl_bdry.png",xres,yres,FALSE,FALSE,1.0,FALSE,mtn,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
     // and include only where it makes the pixel brighter
     for (int row=0; row<yres; ++row) {

@@ -25,6 +25,8 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 	-wmps value			Average wind speed (m/s)
 	-hdi value			Human development index (0 to 1)
 	-mtn value			Proximity to terrain (0 to 1)
+	-ct lat lon			Close to a given location (N lat and E lon, use negative for S and W)
+	-ff lat lon			Far from a given location (N lat and E lon, use negative for S and W)
 	-new				Start setting preferences for a second person
 	-o name.png			Output file name
 
@@ -45,7 +47,6 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 * And use that to mask off all open water areas (like the Caspian Sea)
 * Generate a layer with US state boundaries to aid in locating these places, make that optional
 * Support optional "no elevation less than x" or a desired elevation (use log scale?)
-* Optional argument "prefer far away from lat-lon" or "prefer close to lat-lon"
 * Support argument "prefer weather like lat-lon" and "prefer all settings like lat-lon"
 * Even make temperature optional, or add a weight to temperature to allow ignoring it
 * Use population density to allow "in a city but near the country" or "in the country but near a city"
