@@ -906,7 +906,7 @@ int main (int argc, char **argv) {
     } else if (strncmp(argv[i], "-wmph", 5) == 0) {
       ideal[p-1][4] = 0.44704f*atof(argv[++i]);
       printf("  set ideal wind speed to %g (m/s)\n", ideal[p-1][4]);
-    } else if (strncmp(argv[i], "-hdi", 2) == 0) {
+    } else if (strncmp(argv[i], "-hdi", 3) == 0) {
       ideal[p-1][5] = atof(argv[++i]);
       printf("  set ideal Human Development Index to %g (1=most)\n", ideal[p-1][5]);
     } else if (strncmp(argv[i], "-mtn", 3) == 0) {
@@ -922,6 +922,8 @@ int main (int argc, char **argv) {
       printf("  prefer far from %g N %g E\n", ideal[p-1][9], ideal[p-1][10]);
     } else if (strncmp(argv[i], "-o", 2) == 0) {
       strcpy(outpng,argv[++i]);
+    } else if (strncmp(argv[i], "-h", 2) == 0) {
+      (void) Usage(progname,0);
     } else {
       (void) Usage(progname,0);
     }
