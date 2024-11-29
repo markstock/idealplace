@@ -759,11 +759,29 @@ int Usage(char progname[255],int status) {
    static char **cpp, *help_message[] = {
    "where [-options] are zero or more of the following:                        ",
    "                                                                           ",
-   "   [-nn num]   number of relaxation iterations in the wall-normal dir (1)  ",
+   "   [-tf jan-low jan-high jul-low jul-high]    temperatures in deg F        ",
    "                                                                           ",
-   "   [-nt num]   number of relaxation iterations in the wall-tangent dir (1) ",
+   "   [-tc jan-low jan-high jul-low jul-high]    temperatures in deg C        ",
    "                                                                           ",
-   "   [-i file]   input file name                                             ",
+   "   [-mr num]   average monthly precipitation, in mm/month                  ",
+   "                                                                           ",
+   "   [-ac num]   average cloudiness, in fraction (0..1, 1=always cloudy)     ",
+   "                                                                           ",
+   "   [-hdi num]  Human Development Index, local (0..1)                       ",
+   "                                                                           ",
+   "   [-mtn num]  proximity to and magnitude of mountains (0==1)              ",
+   "                                                                           ",
+   "   [-wmph num]   average wind speed in miles-per-hour                      ",
+   "                                                                           ",
+   "   [-wmps num]   average wind speed in meters-per-second                   ",
+   "                                                                           ",
+   "   [-ct lat lon]   prefer locations close to given lat-lon location (N, E) ",
+   "                                                                           ",
+   "   [-ff lat lon]   prefer locations far from given lat-lon location (N, E) ",
+   "                                                                           ",
+   "   [-boston]   set all preferences to that of Boston, Massachusetts, USA   ",
+   "                                                                           ",
+   "   [-new]      begin defining preferences for a second person (up to 8)    ",
    "                                                                           ",
    "   [-o file]   output file name                                            ",
    "                                                                           ",
@@ -920,6 +938,12 @@ int main (int argc, char **argv) {
       ideal[p-1][9] = atof(argv[++i]);
       ideal[p-1][10] = atof(argv[++i]);
       printf("  prefer far from %g N %g E\n", ideal[p-1][9], ideal[p-1][10]);
+    //} else if (strncmp(argv[i], "-nw", 3) == 0) {
+      //ideal[p-1][6] = atof(argv[++i]);
+      //printf("  set ideal water proximity to %g (1=closest)\n", ideal[p-1][6]);
+    //} else if (strncmp(argv[i], "-no", 3) == 0) {
+      //ideal[p-1][6] = atof(argv[++i]);
+      //printf("  set ideal ocean proximity to %g (1=closest)\n", ideal[p-1][6]);
     } else if (strncmp(argv[i], "-o", 2) == 0) {
       strcpy(outpng,argv[++i]);
     } else if (strncmp(argv[i], "-h", 2) == 0) {
