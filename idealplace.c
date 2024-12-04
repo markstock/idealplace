@@ -763,6 +763,14 @@ int Usage(char progname[255],int status) {
    "                                                                           ",
    "   [-tc jan-low jan-high jul-low jul-high]    temperatures in deg C        ",
    "                                                                           ",
+   "   [-wtf jan-low jan-high]    winter temperatures in deg F                 ",
+   "                                                                           ",
+   "   [-wtc jan-low jan-high]    winter temperatures in deg C                 ",
+   "                                                                           ",
+   "   [-stf jul-low jul-high]    summer temperatures in deg F                 ",
+   "                                                                           ",
+   "   [-stc jul-low jul-high]    summer temperatures in deg C                 ",
+   "                                                                           ",
    "   [-mr num]   average monthly precipitation, in mm/month                  ",
    "                                                                           ",
    "   [-ac num]   average cloudiness, in fraction (0..1, 1=always cloudy)     ",
@@ -847,8 +855,9 @@ int main (int argc, char **argv) {
   int p = 1;	// start with 1 set of preferences
   // pre-set all
   for (int i=0; i<8; ++i) {
-    ideal[i][0] = 10.f;
-    ideal[i][1] = 20.f;
+    // under -100 means ignore these temps
+    ideal[i][0] = -999.f;
+    ideal[i][1] = -999.f;
     // these -1 mean "don't use"
     ideal[i][2] = -1.f;
     ideal[i][3] = -1.f;
@@ -896,6 +905,26 @@ int main (int argc, char **argv) {
         ++p;
         printf("Setting ideals for person %d now\n", p);
       }
+    } else if (strncmp(argv[i], "-stc", 4) == 0) {
+      const float julylow = atof(argv[++i]);
+      const float julyhigh = atof(argv[++i]);
+      ideal[p-1][1] = 0.5*(julylow+julyhigh);
+      printf("  set ideal July temp to %g %g C\n", ideal[p-1][1]);
+    } else if (strncmp(argv[i], "-stf", 4) == 0) {
+      const float julylow = atof(argv[++i]);
+      const float julyhigh = atof(argv[++i]);
+      ideal[p-1][1] = ftoc(0.5*(julylow+julyhigh));
+      printf("  set ideal July temp to %g %g C\n", ideal[p-1][1]);
+    } else if (strncmp(argv[i], "-wtc", 4) == 0) {
+      const float janlow = atof(argv[++i]);
+      const float janhigh = atof(argv[++i]);
+      ideal[p-1][0] = 0.5*(janlow+janhigh);
+      printf("  set ideal Jan temp to %g %g C\n", ideal[p-1][0]);
+    } else if (strncmp(argv[i], "-wtf", 4) == 0) {
+      const float janlow = atof(argv[++i]);
+      const float janhigh = atof(argv[++i]);
+      ideal[p-1][0] = ftoc(0.5*(janlow+janhigh));
+      printf("  set ideal Jan temp to %g %g C\n", ideal[p-1][0]);
     } else if (strncmp(argv[i], "-tc", 3) == 0) {
       const float janlow = atof(argv[++i]);
       const float janhigh = atof(argv[++i]);
@@ -1015,23 +1044,34 @@ int main (int argc, char **argv) {
 
   for (int ip=0; ip<p; ++ip) {
 
-  // always consider temperature
+  // all preferences are now optional
+
   float ideal_tempw = ideal[ip][0];
-  float ideal_temps = ideal[ip][1];
-  for (int row=0; row<yres; ++row) {
-    for (int col=0; col<xres; ++col) {
-      if (tempw[col][row] > -29.9f) {
-        float tempcost = temp_penalty * fabs(temps[col][row]-ideal_temps);
-        outval[col][row] += tempcost;
-        total_temp += tempcost;
-        tempcost = temp_penalty * fabs(tempw[col][row]-ideal_tempw);
-        outval[col][row] += tempcost;
-        total_temp += tempcost;
+  if (ideal_tempw > -500.f) {
+    for (int row=0; row<yres; ++row) {
+      for (int col=0; col<xres; ++col) {
+        if (tempw[col][row] > -29.9f) {
+          const float tempcost = temp_penalty * fabs(tempw[col][row]-ideal_tempw);
+          outval[col][row] += tempcost;
+          total_temp += tempcost;
+        }
       }
     }
   }
 
-  // all others are optional
+  float ideal_temps = ideal[ip][1];
+  if (ideal_temps > -500.f) {
+    for (int row=0; row<yres; ++row) {
+      for (int col=0; col<xres; ++col) {
+        if (tempw[col][row] > -29.9f) {
+          const float tempcost = temp_penalty * fabs(temps[col][row]-ideal_temps);
+          outval[col][row] += tempcost;
+          total_temp += tempcost;
+        }
+      }
+    }
+  }
+
   float ideal_rain = ideal[ip][2];
   if (ideal_rain >= 0.f) {
     for (int row=0; row<yres; ++row) {
@@ -1098,9 +1138,9 @@ int main (int argc, char **argv) {
   }
 
   // want close to, so penalize far from
-  int ideal_px = 0.5f + xres * (180.f + ideal[p-1][8]) / 360.f;
-  int ideal_py = 0.5f + yres * ( 90.f + ideal[p-1][7]) / 180.f;
-  if (ideal[p-1][7] > -500.f) {
+  int ideal_px = 0.5f + xres * (180.f + ideal[ip][8]) / 360.f;
+  int ideal_py = 0.5f + yres * ( 90.f + ideal[ip][7]) / 180.f;
+  if (ideal[ip][7] > -500.f) {
     for (int row=0; row<yres; ++row) {
       for (int col=0; col<xres; ++col) {
         if (tempw[col][row] > -29.9f) {
@@ -1113,9 +1153,9 @@ int main (int argc, char **argv) {
   }
 
   // want far from given point, so penalize close to
-  ideal_px = 0.5f + xres * (180.f + ideal[p-1][10]) / 360.f;
-  ideal_py = 0.5f + yres * ( 90.f + ideal[p-1][9]) / 180.f;
-  if (ideal[p-1][9] > -500.f) {
+  ideal_px = 0.5f + xres * (180.f + ideal[ip][10]) / 360.f;
+  ideal_py = 0.5f + yres * ( 90.f + ideal[ip][9]) / 180.f;
+  if (ideal[ip][9] > -500.f) {
     for (int row=0; row<yres; ++row) {
       for (int col=0; col<xres; ++col) {
         if (tempw[col][row] > -29.9f) {

@@ -19,12 +19,16 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 	-boston				Set the preferences to Boston, USA
 	-tf januarylow januaryhigh julylow julyhigh		(all in F)
 	-tc januarylow januaryhigh julylow julyhigh		(all in C)
+	-wtf januarylow januaryhigh 	(all in F)
+	-wtc januarylow januaryhigh 	(all in C)
+	-stf julylow julyhigh			(all in F)
+	-stc julylow julyhigh			(all in C)
 	-mr value			Average precipitation in mm/month
 	-ac value			Average cloud cover (0 to 1)
 	-wmph value			Average wind speed (mph)
 	-wmps value			Average wind speed (m/s)
 	-hdi value			Human development index (0 to 1)
-	-mtn value			Proximity to terrain (0 to 1)
+	-mtn value			Proximity to and magnitude of terrain (0 to 1)
 	-ct lat lon			Close to a given location (N lat and E lon, use negative for S and W)
 	-ff lat lon			Far from a given location (N lat and E lon, use negative for S and W)
 	-new				Start setting preferences for a second person
@@ -48,7 +52,6 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 * Generate a layer with US state boundaries to aid in locating these places, make that optional
 * Support optional "no elevation less than x" or a desired elevation (use log scale?)
 * Support argument "prefer weather like lat-lon" and "prefer all settings like lat-lon"
-* Even make temperature optional, or add a weight to temperature to allow ignoring it
 * Use population density to allow "in a city but near the country" or "in the country but near a city"
 * Find a higher-resolution cloud data set, if possible
 
