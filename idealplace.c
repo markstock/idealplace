@@ -855,16 +855,14 @@ int main (int argc, char **argv) {
   int p = 1;	// start with 1 set of preferences
   // pre-set all
   for (int i=0; i<8; ++i) {
-    // under -100 means ignore these temps
+    // under -100 means ignore this
     ideal[i][0] = -999.f;
     ideal[i][1] = -999.f;
-    // these -1 mean "don't use"
-    ideal[i][2] = -1.f;
-    ideal[i][3] = -1.f;
-    ideal[i][4] = -1.f;
-    ideal[i][5] = -1.f;
-    ideal[i][6] = -1.f;
-    // for lat-lon, need lower
+    ideal[i][2] = -999.f;
+    ideal[i][3] = -999.f;
+    ideal[i][4] = -999.f;
+    ideal[i][5] = -999.f;
+    ideal[i][6] = -999.f;
     ideal[i][7] = -999.f;
     ideal[i][8] = -999.f;
     ideal[i][9] = -999.f;
@@ -885,6 +883,15 @@ int main (int argc, char **argv) {
   boston[9] = -999.f;	// latitude (N degrees) - far from
   boston[10] = -999.f;	// longitude (E degrees) - far from
 
+  // penalty weight for being off
+  float temp_penalty = 0.05f;
+  float rain_penalty = 1.5f;
+  float cloud_penalty = 5.0f;
+  float wind_penalty = 1.0f;
+  float hdi_penalty = 5.0f;
+  float mtn_penalty = 5.0f;
+  float dist_penalty = 2.5f;
+
   // define default parameters
   char outpng[255];
   sprintf(outpng,"out.png");
@@ -894,10 +901,30 @@ int main (int argc, char **argv) {
   (void) strcpy(progname,argv[0]);
   if (argc < 1) (void) Usage(progname,0);
   for (int i=1; i<argc; i++) {
-    if (strncmp(argv[i], "-boston", 3) == 0) {
+    // first, count the number of + or - in front of the argument
+    float weight_mult = 1.f;
+    int j = 0;
+    for (j=0; j<50; ++j) {
+      if (argv[i][j] == '+') {
+        // weight remains 1 if this is the first character
+        weight_mult *= (j==0) ? 1.f : 2.f;
+      } else if (argv[i][j] == '-') {
+        weight_mult *= 0.5f;
+      } else {
+        // not a + or -, must be the argument
+        break;
+      }
+    }
+    // now j is where the word begins
+    char thisarg[255];
+    strcpy(thisarg, argv[i]+j);
+    //printf("arg %d mult is %g key is %s\n", i, weight_mult, thisarg);
+
+    // then look at the remainder of the argument
+    if (strncmp(thisarg, "boston", 2) == 0) {
       // replace ideals for current person to Boston
       for (int i=0; i<6; ++i) ideal[p-1][i] = boston[i];
-    } else if (strncmp(argv[i], "-new", 3) == 0) {
+    } else if (strncmp(thisarg, "new", 2) == 0) {
       if (p==8) {
         printf("No more than 8 sets of preferences allowed.\n");
       } else {
@@ -905,77 +932,91 @@ int main (int argc, char **argv) {
         ++p;
         printf("Setting ideals for person %d now\n", p);
       }
-    } else if (strncmp(argv[i], "-stc", 4) == 0) {
+    } else if (strncmp(thisarg, "stc", 3) == 0) {
       const float julylow = atof(argv[++i]);
       const float julyhigh = atof(argv[++i]);
       ideal[p-1][1] = 0.5*(julylow+julyhigh);
+      temp_penalty *= weight_mult;
       printf("  set ideal July temp to %g %g C\n", ideal[p-1][1]);
-    } else if (strncmp(argv[i], "-stf", 4) == 0) {
+    } else if (strncmp(thisarg, "stf", 3) == 0) {
       const float julylow = atof(argv[++i]);
       const float julyhigh = atof(argv[++i]);
       ideal[p-1][1] = ftoc(0.5*(julylow+julyhigh));
+      temp_penalty *= weight_mult;
       printf("  set ideal July temp to %g %g C\n", ideal[p-1][1]);
-    } else if (strncmp(argv[i], "-wtc", 4) == 0) {
+    } else if (strncmp(thisarg, "wtc", 3) == 0) {
       const float janlow = atof(argv[++i]);
       const float janhigh = atof(argv[++i]);
       ideal[p-1][0] = 0.5*(janlow+janhigh);
+      temp_penalty *= weight_mult;
       printf("  set ideal Jan temp to %g %g C\n", ideal[p-1][0]);
-    } else if (strncmp(argv[i], "-wtf", 4) == 0) {
+    } else if (strncmp(thisarg, "wtf", 3) == 0) {
       const float janlow = atof(argv[++i]);
       const float janhigh = atof(argv[++i]);
       ideal[p-1][0] = ftoc(0.5*(janlow+janhigh));
+      temp_penalty *= weight_mult;
       printf("  set ideal Jan temp to %g %g C\n", ideal[p-1][0]);
-    } else if (strncmp(argv[i], "-tc", 3) == 0) {
+    } else if (strncmp(thisarg, "tc", 2) == 0) {
       const float janlow = atof(argv[++i]);
       const float janhigh = atof(argv[++i]);
       const float julylow = atof(argv[++i]);
       const float julyhigh = atof(argv[++i]);
       ideal[p-1][0] = 0.5*(janlow+janhigh);
       ideal[p-1][1] = 0.5*(julylow+julyhigh);
+      temp_penalty *= weight_mult;
       printf("  set ideal Jan, July temps to %g %g C\n", ideal[p-1][0], ideal[p-1][1]);
-    } else if (strncmp(argv[i], "-tf", 3) == 0) {
+    } else if (strncmp(thisarg, "tf", 2) == 0) {
       const float janlow = atof(argv[++i]);
       const float janhigh = atof(argv[++i]);
       const float julylow = atof(argv[++i]);
       const float julyhigh = atof(argv[++i]);
       ideal[p-1][0] = ftoc(0.5*(janlow+janhigh));
       ideal[p-1][1] = ftoc(0.5*(julylow+julyhigh));
+      temp_penalty *= weight_mult;
       printf("  set ideal Jan, July temps to %g %g C\n", ideal[p-1][0], ideal[p-1][1]);
-    } else if (strncmp(argv[i], "-mr", 3) == 0) {
+    } else if (strncmp(thisarg, "mr", 2) == 0) {
       ideal[p-1][2] = atof(argv[++i]);
+      rain_penalty *= weight_mult;
       printf("  set ideal monthly rain to %g mm/mo\n", ideal[p-1][2]);
-    } else if (strncmp(argv[i], "-ac", 2) == 0) {
+    } else if (strncmp(thisarg, "ac", 2) == 0) {
       ideal[p-1][3] = atof(argv[++i]);
+      cloud_penalty *= weight_mult;
       printf("  set ideal annual cloud cover to %g (1=100%)\n", ideal[p-1][3]);
-    } else if (strncmp(argv[i], "-wmps", 5) == 0) {
+    } else if (strncmp(thisarg, "wmps", 4) == 0) {
       ideal[p-1][4] = atof(argv[++i]);
+      wind_penalty *= weight_mult;
       printf("  set ideal wind speed to %g (m/s)\n", ideal[p-1][4]);
-    } else if (strncmp(argv[i], "-wmph", 5) == 0) {
+    } else if (strncmp(thisarg, "wmph", 4) == 0) {
       ideal[p-1][4] = 0.44704f*atof(argv[++i]);
+      wind_penalty *= weight_mult;
       printf("  set ideal wind speed to %g (m/s)\n", ideal[p-1][4]);
-    } else if (strncmp(argv[i], "-hdi", 3) == 0) {
+    } else if (strncmp(thisarg, "hdi", 3) == 0) {
       ideal[p-1][5] = atof(argv[++i]);
+      hdi_penalty *= weight_mult;
       printf("  set ideal Human Development Index to %g (1=most)\n", ideal[p-1][5]);
-    } else if (strncmp(argv[i], "-mtn", 3) == 0) {
+    } else if (strncmp(thisarg, "mtn", 3) == 0) {
       ideal[p-1][6] = atof(argv[++i]);
+      mtn_penalty *= weight_mult;
       printf("  set ideal mountain proximity to %g (1=closest)\n", ideal[p-1][6]);
-    } else if (strncmp(argv[i], "-ct", 3) == 0) {
+    } else if (strncmp(thisarg, "ct", 2) == 0) {
       ideal[p-1][7] = atof(argv[++i]);
       ideal[p-1][8] = atof(argv[++i]);
+      dist_penalty *= weight_mult;
       printf("  prefer close to %g N %g E\n", ideal[p-1][7], ideal[p-1][8]);
-    } else if (strncmp(argv[i], "-ff", 3) == 0) {
+    } else if (strncmp(thisarg, "ff", 2) == 0) {
       ideal[p-1][9] = atof(argv[++i]);
       ideal[p-1][10] = atof(argv[++i]);
+      dist_penalty *= weight_mult;
       printf("  prefer far from %g N %g E\n", ideal[p-1][9], ideal[p-1][10]);
-    //} else if (strncmp(argv[i], "-nw", 3) == 0) {
+    //} else if (strncmp(thisarg, "nw", 2) == 0) {
       //ideal[p-1][6] = atof(argv[++i]);
       //printf("  set ideal water proximity to %g (1=closest)\n", ideal[p-1][6]);
-    //} else if (strncmp(argv[i], "-no", 3) == 0) {
+    //} else if (strncmp(thisarg, "no", 2) == 0) {
       //ideal[p-1][6] = atof(argv[++i]);
       //printf("  set ideal ocean proximity to %g (1=closest)\n", ideal[p-1][6]);
-    } else if (strncmp(argv[i], "-o", 2) == 0) {
+    } else if (strncmp(thisarg, "o", 1) == 0) {
       strcpy(outpng,argv[++i]);
-    } else if (strncmp(argv[i], "-h", 2) == 0) {
+    } else if (strncmp(thisarg, "h", 1) == 0) {
       (void) Usage(progname,0);
     } else {
       (void) Usage(progname,0);
@@ -1021,15 +1062,6 @@ int main (int argc, char **argv) {
       outval[col][row] = 0.0f;
     }
   }
-
-  // penalty weight for being off
-  const float temp_penalty = 0.1f;
-  const float rain_penalty = 1.5f;
-  const float cloud_penalty = 5.0f;
-  const float wind_penalty = 1.0f;
-  const float hdi_penalty = 5.0f;
-  const float mtn_penalty = 5.0f;
-  const float dist_penalty = 2.5f;
 
   // running sums
   float total_temp = 0.f;

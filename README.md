@@ -16,6 +16,8 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 
 ## Options
 
+All options can be preceded by either a "+" or a "-" and they will all be weighted similarly. To apply different weights to the different criteria, either preceed each argument with "-" for less weight or "+" for more weight, and use more of each character to halve or double the weight.
+
 	-boston				Set the preferences to Boston, USA
 	-tf januarylow januaryhigh julylow julyhigh		(all in F)
 	-tc januarylow januaryhigh julylow julyhigh		(all in C)
@@ -33,6 +35,14 @@ The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Ea
 	-ff lat lon			Far from a given location (N lat and E lon, use negative for S and W)
 	-new				Start setting preferences for a second person
 	-o name.png			Output file name
+
+For example, to select for only annual rainfall and wind, but have rainfall be twice as "important" as wind, use any of these:
+
+	./idealplace ++mr 100 +wmph 8
+	./idealplace +mr 100 -wmph 8
+	./idealplace -mr 100 --wmph 8
+
+You can use up to 50 "+" or "-", but at that point, just remove all other criteria arguments from the command line, or just look at the source png image for your ideal place.
 
 ## Sources
 
