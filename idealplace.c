@@ -937,25 +937,25 @@ int main (int argc, char **argv) {
       const float julyhigh = atof(argv[++i]);
       ideal[p-1][1] = 0.5*(julylow+julyhigh);
       temp_penalty *= weight_mult;
-      printf("  set ideal July temp to %g %g C\n", ideal[p-1][1]);
+      printf("  set ideal July temp to %g C\n", ideal[p-1][1]);
     } else if (strncmp(thisarg, "stf", 3) == 0) {
       const float julylow = atof(argv[++i]);
       const float julyhigh = atof(argv[++i]);
       ideal[p-1][1] = ftoc(0.5*(julylow+julyhigh));
       temp_penalty *= weight_mult;
-      printf("  set ideal July temp to %g %g C\n", ideal[p-1][1]);
+      printf("  set ideal July temp to %g C\n", ideal[p-1][1]);
     } else if (strncmp(thisarg, "wtc", 3) == 0) {
       const float janlow = atof(argv[++i]);
       const float janhigh = atof(argv[++i]);
       ideal[p-1][0] = 0.5*(janlow+janhigh);
       temp_penalty *= weight_mult;
-      printf("  set ideal Jan temp to %g %g C\n", ideal[p-1][0]);
+      printf("  set ideal Jan temp to %g C\n", ideal[p-1][0]);
     } else if (strncmp(thisarg, "wtf", 3) == 0) {
       const float janlow = atof(argv[++i]);
       const float janhigh = atof(argv[++i]);
       ideal[p-1][0] = ftoc(0.5*(janlow+janhigh));
       temp_penalty *= weight_mult;
-      printf("  set ideal Jan temp to %g %g C\n", ideal[p-1][0]);
+      printf("  set ideal Jan temp to %g C\n", ideal[p-1][0]);
     } else if (strncmp(thisarg, "tc", 2) == 0) {
       const float janlow = atof(argv[++i]);
       const float janhigh = atof(argv[++i]);
