@@ -25,6 +25,9 @@ All options can be preceded by either a "+" or a "-" and they will all be weight
 	-wtc januarylow januaryhigh 	(all in C)
 	-stf julylow julyhigh			(all in F)
 	-stc julylow julyhigh			(all in C)
+	-m [1-12]			Evaluate only for a specific month
+	-mtf low high			(low and high temps for that month in F)
+	-mtc low high			(low and high temps for that month in C)
 	-mr value			Average precipitation in mm/month
 	-ac value			Average cloud cover (0 to 1)
 	-wmph value			Average wind speed (mph)

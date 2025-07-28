@@ -2,8 +2,9 @@
  * idealweather.c
  *
  * version 0.1  2024-11-21
+ * version 0.2  2025-07-27	added per-month capability
  *
- * copyright 2024  Mark J. Stock  markjstock@gmail.com
+ * copyright 2024,5  Mark J. Stock  markjstock@gmail.com
  *
  * Read many 16-bit grey png images and find the ideal climate
  *
@@ -771,6 +772,12 @@ int Usage(char progname[255],int status) {
    "                                                                           ",
    "   [-stc jul-low jul-high]    summer temperatures in deg C                 ",
    "                                                                           ",
+   "   [-m month]  limit to a specific month (1-12)                            ",
+   "                                                                           ",
+   "   [-mtf low high]    temperatures in deg F for given month                ",
+   "                                                                           ",
+   "   [-mtc low high]    temperatures in deg C for given month                ",
+   "                                                                           ",
    "   [-mr num]   average monthly precipitation, in mm/month                  ",
    "                                                                           ",
    "   [-ac num]   average cloudiness, in fraction (0..1, 1=always cloudy)     ",
@@ -870,7 +877,7 @@ int main (int argc, char **argv) {
   }
 
   // array to hold values for my hometown
-  float boston[7];
+  float boston[11];
   boston[0] = 1.1f;		// Jan mean temp (-30..40 C)
   boston[1] = 24.5f;	// July mean temp (-30..40 C)
   boston[2] = 101.f;	// Annual average rain (0..1000 mm/mo)
@@ -882,6 +889,9 @@ int main (int argc, char **argv) {
   boston[8] = -71.05f;	// longitude (E degrees) - close to
   boston[9] = -999.f;	// latitude (N degrees) - far from
   boston[10] = -999.f;	// longitude (E degrees) - far from
+
+  // are we doing a specific month? (or year-round)
+  int imonth = 0;		// default is NO specific month
 
   // penalty weight for being off
   float temp_penalty = 0.05f;
@@ -974,6 +984,18 @@ int main (int argc, char **argv) {
       ideal[p-1][1] = ftoc(0.5*(julylow+julyhigh));
       temp_penalty *= weight_mult;
       printf("  set ideal Jan, July temps to %g %g C\n", ideal[p-1][0], ideal[p-1][1]);
+    } else if (strncmp(thisarg, "mtc", 3) == 0) {
+      const float janlow = atof(argv[++i]);
+      const float janhigh = atof(argv[++i]);
+      ideal[p-1][0] = 0.5*(janlow+janhigh);
+      temp_penalty *= weight_mult;
+      printf("  set ideal temp to %g C\n", ideal[p-1][0]);
+    } else if (strncmp(thisarg, "mtf", 3) == 0) {
+      const float janlow = atof(argv[++i]);
+      const float janhigh = atof(argv[++i]);
+      ideal[p-1][0] = ftoc(0.5*(janlow+janhigh));
+      temp_penalty *= weight_mult;
+      printf("  set ideal temp to %g C\n", ideal[p-1][0]);
     } else if (strncmp(thisarg, "mr", 2) == 0) {
       ideal[p-1][2] = atof(argv[++i]);
       rain_penalty *= weight_mult;
@@ -1014,6 +1036,9 @@ int main (int argc, char **argv) {
     //} else if (strncmp(thisarg, "no", 2) == 0) {
       //ideal[p-1][6] = atof(argv[++i]);
       //printf("  set ideal ocean proximity to %g (1=closest)\n", ideal[p-1][6]);
+    } else if (strncmp(thisarg, "m", 1) == 0) {
+      imonth = atoi(argv[++i]);
+      printf("  setting month to %d\n", imonth);
     } else if (strncmp(thisarg, "o", 1) == 0) {
       strcpy(outpng,argv[++i]);
     } else if (strncmp(thisarg, "h", 1) == 0) {
@@ -1029,14 +1054,29 @@ int main (int argc, char **argv) {
   (void)read_png_res("airtemp_m1.png", &yres, &xres);
 
   // allocate and read temperature, full range is -30 to 40 C
-  float** tempw = allocate_2d_array_f(xres,yres);
-  (void)read_png("airtemp_m1.png",xres,yres,FALSE,FALSE,1.0,FALSE,tempw,-30.0,70.0,NULL,0.0,1.0,NULL,0.0,1.0);
   float** temps = allocate_2d_array_f(xres,yres);
   (void)read_png("airtemp_m7.png",xres,yres,FALSE,FALSE,1.0,FALSE,temps,-30.0,70.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  float** tempw = allocate_2d_array_f(xres,yres);
+  if (imonth == 0) {
+    (void)read_png("airtemp_m1.png",xres,yres,FALSE,FALSE,1.0,FALSE,tempw,-30.0,70.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  } else {
+    // load the specific month's data files over the jan/winter space
+    char airtemp[16];
+    sprintf(airtemp,"airtemp_m%d.png",imonth);
+    (void)read_png(airtemp,xres,yres,FALSE,FALSE,1.0,FALSE,tempw,-30.0,70.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  }
 
   // allocate and read precipitation, full range is 0 to 1000mm per month
   float** rain = allocate_2d_array_f(xres,yres);
-  (void)read_png("precip_avg.png",xres,yres,FALSE,FALSE,1.0,FALSE,rain,0.0,1000.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  if (imonth == 0) {
+    // load the annual file
+    (void)read_png("precip_avg.png",xres,yres,FALSE,FALSE,1.0,FALSE,rain,0.0,1000.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  } else {
+    // load the specific month's data file instead
+    char precipf[16];
+    sprintf(precipf,"precip_m%d.png",imonth);
+    (void)read_png(precipf,xres,yres,FALSE,FALSE,1.0,FALSE,rain,0.0,1000.0,NULL,0.0,1.0,NULL,0.0,1.0);
+  }
 
   // and clouds (0=sunny, 1=cloudy)
   float** clouds = allocate_2d_array_f(xres,yres);
