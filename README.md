@@ -24,7 +24,6 @@ On OSX, first install Homebrew, then install the two dependencies:
 
 All options can be preceded by either a "+" or a "-" and they will all be weighted similarly. To apply different weights to the different criteria, either preceed each argument with "-" for less weight or "+" for more weight, and use more of each character to halve or double the weight.
 
-	-boston				Set the preferences to Boston, USA
 	-tf januarylow januaryhigh julylow julyhigh		(all in F)
 	-tc januarylow januaryhigh julylow julyhigh		(all in C)
 	-wtf januarylow januaryhigh 	(all in F)
@@ -42,7 +41,9 @@ All options can be preceded by either a "+" or a "-" and they will all be weight
 	-mtn value			Proximity to and magnitude of terrain (0 to 1)
 	-ct lat lon			Close to a given location (N lat and E lon, use negative for S and W)
 	-ff lat lon			Far from a given location (N lat and E lon, use negative for S and W)
+	-boston				Set the preferences to Boston, USA
 	-new				Start setting preferences for a second person
+	-nobdry				Do not draw national boundaries on output image
 	-o name.png			Output file name
 
 For example, to select for only annual rainfall and wind, but have rainfall be twice as "important" as wind, use any of these:
