@@ -909,7 +909,10 @@ int main (int argc, char **argv) {
   // process command-line parameters
   char progname[255];
   (void) strcpy(progname,argv[0]);
-  if (argc < 1) (void) Usage(progname,0);
+  // if no arguments, find places on earth with weather similar to Boston
+  if (argc < 2) {
+    for (int i=0; i<6; ++i) ideal[p-1][i] = boston[i];
+  }
   for (int i=1; i<argc; i++) {
     // first, count the number of + or - in front of the argument
     float weight_mult = 1.f;
