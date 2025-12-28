@@ -6,13 +6,19 @@ Find the ideal location on the Earth for you
 
 ## Build and run
 
-Should be as easy as
+Should be as easy as:
 
 	make
-
 	./idealplace
 
 The program will run and output a 3600x1800 pixel 16-bit greyscale PNG of the Earth, with lighter colors representing areas which match the given preferences.
+
+On OSX, first install Homebrew, then install the two dependencies:
+
+	brew install libpng pkg-config
+	make
+	./idealplace
+
 
 ## Options
 
