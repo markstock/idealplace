@@ -798,6 +798,8 @@ int Usage(char progname[255],int status) {
    "                                                                           ",
    "   [-new]      begin defining preferences for a second person (up to 8)    ",
    "                                                                           ",
+   "   [-nobdry]   do not draw national boundaries on output image             ",
+   "                                                                           ",
    "   [-o file]   output file name                                            ",
    "                                                                           ",
    "   [-help]     returns this help information                               ",
@@ -893,7 +895,7 @@ int main (int argc, char **argv) {
   // are we doing a specific month? (or year-round)
   int imonth = 0;		// default is NO specific month
 
-  // penalty weight for being off
+  // penalty weight for distance from ideal
   float temp_penalty = 0.05f;
   float rain_penalty = 1.5f;
   float cloud_penalty = 5.0f;
@@ -902,7 +904,7 @@ int main (int argc, char **argv) {
   float mtn_penalty = 5.0f;
   float dist_penalty = 2.5f;
 
-  // define default parameters
+  int drawbdry = TRUE;
   char outpng[255];
   sprintf(outpng,"out.png");
 
@@ -937,6 +939,8 @@ int main (int argc, char **argv) {
     if (strncmp(thisarg, "boston", 2) == 0) {
       // replace ideals for current person to Boston
       for (int i=0; i<6; ++i) ideal[p-1][i] = boston[i];
+    } else if (strncmp(thisarg, "nobdry", 2) == 0) {
+      drawbdry = FALSE;
     } else if (strncmp(thisarg, "new", 2) == 0) {
       if (p==8) {
         printf("No more than 8 sets of preferences allowed.\n");
@@ -1305,7 +1309,7 @@ int main (int argc, char **argv) {
   printf("\n");
 
   // optionally add national boundary lines (overwrite the mountain map)
-  if (1==1) {
+  if (drawbdry) {
     (void)read_png("natl_bdry.png",xres,yres,FALSE,FALSE,1.0,FALSE,mtn,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
     // and include only where it makes the pixel brighter
     for (int row=0; row<yres; ++row) {
