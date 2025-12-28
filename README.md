@@ -41,6 +41,8 @@ All options can be preceded by either a "+" or a "-" and they will all be weight
 	-mtn value			Proximity to and magnitude of terrain (0 to 1)
 	-ct lat lon			Close to a given location (N lat and E lon, use negative for S and W)
 	-ff lat lon			Far from a given location (N lat and E lon, use negative for S and W)
+	-cl lat lon			Climate like a given location (N lat and E lon, use negative for S and W)
+	-el lat lon			Everything like a given location (N lat and E lon, use negative for S and W)
 	-boston				Set the preferences to Boston, USA
 	-new				Start setting preferences for a second person
 	-nobdry				Do not draw national boundaries on output image
@@ -71,9 +73,10 @@ You can use up to 50 "+" or "-", but at that point, just remove all other criter
 * And use that to mask off all open water areas (like the Caspian Sea)
 * Generate a layer with US state boundaries to aid in locating these places, make that optional
 * Support optional "no elevation less than x" or a desired elevation (use log scale?)
-* Support argument "prefer weather like lat-lon" and "prefer all settings like lat-lon"
 * Use population density to allow "in a city but near the country" or "in the country but near a city"
 * Find a higher-resolution cloud data set, if possible
+* Use Nanoflann and the GeoNames datasets to convert lat-lon into a city/town name for your ideal place,
+and also to set a "climate-like" place given a city name
 
 ## Citing IdealPlace
 

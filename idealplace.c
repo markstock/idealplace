@@ -856,30 +856,33 @@ float gcr_dist_px (const int x1, const int y1, const int x2, const int y2, const
   return gcr_dist (degtorad*lat1, degtorad*lon1, degtorad*lat2, degtorad*lon2);
 }
 
+// fail if input lat-lon are not usable
+void check_lat_lon( const float degN, const float degE) {
+  int fail = FALSE;
+  if (fabs(degN) > 90.f) {
+    fprintf(stderr,"ERROR: input latitude (%g) is not usable, try -90..90\n", degN); 
+    fail = TRUE;
+  }
+  if (fabs(degE) > 180.f) {
+    fprintf(stderr,"ERROR: input longitude (%g) is not usable, try -180..180\n", degN); 
+    fail = TRUE;
+  }
+  if (fail) exit(1);
+}
 
 int main (int argc, char **argv) {
 
-  // array to hold up to 8 sets of preferences
-  float ideal[8][11];
+  // array to hold up to 100 sets of preferences
+  float ideal[100][15];
   int p = 1;	// start with 1 set of preferences
   // pre-set all
-  for (int i=0; i<8; ++i) {
+  for (int i=0; i<100; ++i) {
     // under -100 means ignore this
-    ideal[i][0] = -999.f;
-    ideal[i][1] = -999.f;
-    ideal[i][2] = -999.f;
-    ideal[i][3] = -999.f;
-    ideal[i][4] = -999.f;
-    ideal[i][5] = -999.f;
-    ideal[i][6] = -999.f;
-    ideal[i][7] = -999.f;
-    ideal[i][8] = -999.f;
-    ideal[i][9] = -999.f;
-    ideal[i][10] = -999.f;
+    for (int j=0; j<15; ++j) ideal[i][j] = -999.f;
   }
 
   // array to hold values for my hometown
-  float boston[11];
+  float boston[15];
   boston[0] = 1.1f;		// Jan mean temp (-30..40 C)
   boston[1] = 24.5f;	// July mean temp (-30..40 C)
   boston[2] = 101.f;	// Annual average rain (0..1000 mm/mo)
@@ -891,6 +894,10 @@ int main (int argc, char **argv) {
   boston[8] = -71.05f;	// longitude (E degrees) - close to
   boston[9] = -999.f;	// latitude (N degrees) - far from
   boston[10] = -999.f;	// longitude (E degrees) - far from
+  boston[11] = -999.f;	// latitude (N degrees) - climate like
+  boston[12] = -999.f;	// longitude (E degrees) - climate like
+  boston[13] = -999.f;	// latitude (N degrees) - everything like
+  boston[14] = -999.f;	// longitude (E degrees) - everything like
 
   // are we doing a specific month? (or year-round)
   int imonth = 0;		// default is NO specific month
@@ -1030,11 +1037,13 @@ int main (int argc, char **argv) {
     } else if (strncmp(thisarg, "ct", 2) == 0) {
       ideal[p-1][7] = atof(argv[++i]);
       ideal[p-1][8] = atof(argv[++i]);
+      check_lat_lon(ideal[p-1][7], ideal[p-1][8]);
       dist_penalty *= weight_mult;
       printf("  prefer close to %g N %g E\n", ideal[p-1][7], ideal[p-1][8]);
     } else if (strncmp(thisarg, "ff", 2) == 0) {
       ideal[p-1][9] = atof(argv[++i]);
       ideal[p-1][10] = atof(argv[++i]);
+      check_lat_lon(ideal[p-1][9], ideal[p-1][10]);
       dist_penalty *= weight_mult;
       printf("  prefer far from %g N %g E\n", ideal[p-1][9], ideal[p-1][10]);
     //} else if (strncmp(thisarg, "nw", 2) == 0) {
@@ -1046,6 +1055,16 @@ int main (int argc, char **argv) {
     } else if (strncmp(thisarg, "m", 1) == 0) {
       imonth = atoi(argv[++i]);
       printf("  setting month to %d\n", imonth);
+    } else if (strncmp(thisarg, "cl", 2) == 0) {
+      ideal[p-1][11] = atof(argv[++i]);
+      ideal[p-1][12] = atof(argv[++i]);
+      check_lat_lon(ideal[p-1][11], ideal[p-1][12]);
+      printf("  prefer climate like %g N %g E\n", ideal[p-1][11], ideal[p-1][12]);
+    } else if (strncmp(thisarg, "el", 2) == 0) {
+      ideal[p-1][13] = atof(argv[++i]);
+      ideal[p-1][14] = atof(argv[++i]);
+      check_lat_lon(ideal[p-1][13], ideal[p-1][14]);
+      printf("  prefer everything like %g N %g E\n", ideal[p-1][13], ideal[p-1][14]);
     } else if (strncmp(thisarg, "o", 1) == 0) {
       strcpy(outpng,argv[++i]);
     } else if (strncmp(thisarg, "h", 1) == 0) {
@@ -1101,6 +1120,67 @@ int main (int argc, char **argv) {
   float** mtn = allocate_2d_array_f(xres,yres);
   (void)read_png("dem_variance_area.png",xres,yres,FALSE,FALSE,1.0,FALSE,mtn,0.0,1.0,NULL,0.0,1.0,NULL,0.0,1.0);
 
+  // now that we've loaded everything in, we can apply
+  // -cl  "climate like" and
+  // -el  "everything like"
+
+  // first: check, set, and report "everything like" parameters
+  for (int ip=0; ip<p; ++ip) {
+    if (ideal[ip][13] > -500.f) {
+      printf("Person %d requested 'everything like' %g N %g S, so:\n", ip+1, ideal[ip][13], ideal[ip][14]);
+      int like_px = 0.5f + xres * (180.f + ideal[ip][14]) / 360.f;
+      int like_py = 0.5f + yres * ( 90.f + ideal[ip][13]) / 180.f;
+      // replace ideals for current person to those values
+      ideal[ip][0] = tempw[like_px][like_py];
+      if (imonth == 0) {
+        // imonth is unset
+        // tempw is January and temps is July
+        printf("  set ideal Jan temp to %g C\n", ideal[ip][0]);
+        ideal[ip][1] = temps[like_px][like_py];
+        printf("  set ideal July temp to %g C\n", ideal[ip][1]);
+      } else {
+        // tempw is given month
+        printf("  set ideal temp in month %d to %g C\n", imonth, ideal[ip][0]);
+      }
+      ideal[ip][2] = rain[like_px][like_py];
+      printf("  set ideal monthly rain to %g mm/mo\n", ideal[ip][2]);
+      ideal[ip][3] = clouds[like_px][like_py];
+      printf("  set ideal annual cloud cover to %g (1=100%)\n", ideal[ip][3]);
+      ideal[ip][4] = wind[like_px][like_py];
+      printf("  set ideal wind speed to %g (m/s)\n", ideal[ip][4]);
+      ideal[ip][5] = hdi[like_px][like_py];
+      printf("  set ideal Human Development Index to %g (1=most)\n", ideal[ip][5]);
+      ideal[ip][6] = mtn[like_px][like_py];
+      printf("  set ideal mountain proximity to %g (1=closest)\n", ideal[ip][6]);
+    }
+  }
+
+  // then: check, set, and report "climate like" parameters
+  for (int ip=0; ip<p; ++ip) {
+    if (ideal[ip][11] > -500.f) {
+      printf("Person %d requested 'climate like' %g N %g S, so:\n", ip+1, ideal[ip][11], ideal[ip][12]);
+      int like_px = 0.5f + xres * (180.f + ideal[ip][12]) / 360.f;
+      int like_py = 0.5f + yres * ( 90.f + ideal[ip][11]) / 180.f;
+      // replace ideals for current person to those values
+      ideal[ip][0] = tempw[like_px][like_py];
+      if (imonth == 0) {
+        // imonth is unset
+        // tempw is January and temps is July
+        printf("  set ideal Jan temp to %g C\n", ideal[ip][0]);
+        ideal[ip][1] = temps[like_px][like_py];
+        printf("  set ideal July temp to %g C\n", ideal[ip][1]);
+      } else {
+        // tempw is given month
+        printf("  set ideal temp in month %d to %g C\n", imonth, ideal[ip][0]);
+      }
+      ideal[ip][2] = rain[like_px][like_py];
+      printf("  set ideal monthly rain to %g mm/mo\n", ideal[ip][2]);
+      ideal[ip][3] = clouds[like_px][like_py];
+      printf("  set ideal annual cloud cover to %g (1=100%)\n", ideal[ip][3]);
+      ideal[ip][4] = wind[like_px][like_py];
+      printf("  set ideal wind speed to %g (m/s)\n", ideal[ip][4]);
+    }
+  }
 
   // allocate space for the output and set to 0
   float** outval = allocate_2d_array_f(xres,yres);
